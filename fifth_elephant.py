@@ -13,8 +13,12 @@ def init(instance):
     Args: instance - to access
     Returns: mastodon instance
     """
-    file_path = "/Users/booyaa/.config.fifth_elephant"
-    with open(file_path, 'rb') as f:
+
+    home = os.environ['HOME']
+    file_path = os.path.join(home, ".config.fifth_elephant")
+    print("home:", file_path)
+
+    with open(file_path, 'r') as f:
         raw = f.read()
 
     secrets = json.loads(raw)
@@ -86,19 +90,19 @@ def display_toots(instance):
 
 
 if __name__ == '__main__':
-    # instance = "icosahedron.website"
+    instance = "icosahedron.website"
     # instance = "witches.town"
-    # setup(instance)
+    setup(instance)
 
     instance = "icosahedron.website"
     print("toots for", instance)
     display_toots(instance)
 
-    print("//////////////////////////////////////////////////////////////////")
+    # print("//////////////////////////////////////////////////////////////////")
 
 
-    toots = load(instance)
-    print("no of toots: {}\n\n".format(len(toots)))
+    # toots = load(instance)
+    # print("no of toots: {}\n\n".format(len(toots)))
 
     # instance = "witches.town"
     # print("toots for", instance)
