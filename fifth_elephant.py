@@ -112,7 +112,6 @@ def cache_notifications(secrets):
 def notifications():
     secrets = get_secrets()
 
-    
     cache_notifications(secrets)
     instances = list(secrets.keys())
 
