@@ -8,6 +8,7 @@ import arrow
 from mastodon import Mastodon
 from bs4 import BeautifulSoup
 
+
 def save(instance, toots):
     """
     Pickles toots
@@ -15,9 +16,11 @@ def save(instance, toots):
         instance - used to identify pickles
         toots - to be pickled
     """
-    file_path = os.path.join(".", "dontcommitmebro", instance + ".toots.pickle")
+    file_path = os.path.join(".", "dontcommitmebro",
+                             instance + ".toots.pickle")
     with open(file_path, "wb") as f:
         pickle.dump(toots, f)
+
 
 def load(instance):
     """
@@ -25,7 +28,8 @@ def load(instance):
     Args: instance - to load
     Returns: toots
     """
-    file_path = os.path.join(".", "dontcommitmebro", instance + ".toots.pickle")
+    file_path = os.path.join(".", "dontcommitmebro",
+                             instance + ".toots.pickle")
     with open(file_path, "rb") as f:
         return pickle.load(f)
 
@@ -57,6 +61,7 @@ def display_toots(instance):
         print("  {} - {}\n".format(toot_text,
                                    toot['url']))
 
+
 def get_secrets():
     """
     gets secrets
@@ -77,14 +82,15 @@ def get_secrets():
 
     return secrets
 
-def get_mastodon(instance,secrets):
+
+def get_mastodon(instance, secrets):
     """
     gets an mastodon instance
 
     args: instance dict from get_secrets()
     returns: Mastodon instance
     """
-    api_base_url="https://"+instance
+    api_base_url = "https://" + instance
 
     our_client_id = secrets[instance]["client_id"]
     our_client_secret = secrets[instance]["client_secret"]
@@ -96,26 +102,25 @@ def get_mastodon(instance,secrets):
 def cache_notifications(secrets):
     print("caching results")
     instances = list(secrets.keys())
-    #instances = ["icosahedron.website"]
     for instance in instances:
         print(instance)
         mastodon = get_mastodon(instance, secrets)
         data = mastodon.notifications()
         save(instance, data)
 
+
 def notifications():
     secrets = get_secrets()
 
-    #cache_notifications(secrets)
-
-    instances = list(secrets.keys())
-    #instances = ['cybre.space','i.write.codethat.sucks'] # favs
     
+    cache_notifications(secrets)
+    instances = list(secrets.keys())
+
     for instance in instances:
         print("//////////////////////////////////////////////////////////////////")
         print("// {}".format(instance))
         print("//////////////////////////////////////////////////////////////////\n")
-        mastodon = get_mastodon(instance, secrets)
+        # mastodon = get_mastodon(instance, secrets)
         data = load(instance)
         for item in data:
             note_type = item['type']
@@ -145,9 +150,27 @@ def notifications():
                 print("  {} (@{}) {}\n    {}\n".format(who, handle, when, toot))
             else:
                 print("unhandled type: ", item['type'], "\n")
-                pp.pprint(item)
+
+
+def dump_payload():
+    """
+    Testing: search endpoint
+    """
+    secrets = get_secrets()
+
+    print("caching results")
+    instances = list(secrets.keys())
+    for instance in instances:
+        print(instance)
+        mastodon = get_mastodon(instance, secrets)
+        data = mastodon.search("booyaa")
+        save(instance, data)
+
+    instance = 'icosahedron.website'
+    data = load(instance)
+    print(json.dumps(data, indent=4, separators=(',', ': ')))
 
 
 if __name__ == '__main__':
-    notifications()
-
+    # notifications()
+    dump_payload()
