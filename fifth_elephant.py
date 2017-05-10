@@ -3,36 +3,10 @@ import json
 import pickle
 import pprint as pp
 
+import arrow
+
 from mastodon import Mastodon
 from bs4 import BeautifulSoup
-
-
-def init(instance):
-    """
-    creates a mastodon session, using cached credentials
-
-    args: instance - to access
-    returns: mastodon instance
-    """
-
-    home = os.environ['HOME']
-    file_path = os.path.join(home, ".config.fifth_elephant")
-    print("home:", file_path)
-
-    with open(file_path, 'r') as f:
-        raw = f.read()
-
-    secrets = json.loads(raw)
-    if secrets is None:
-        print("failed to parse config file!")
-        os.sys.exit(-1)
-
-    our_client_id = secrets[instance]["client_id"]
-    our_client_secret = secrets[instance]["client_secret"]
-    our_access_token = secrets[instance]["access_token"]
-    return Mastodon(client_id=our_client_id,
-                    client_secret=our_client_secret, access_token=our_access_token)
-
 
 def save(instance, toots):
     """
@@ -44,13 +18,6 @@ def save(instance, toots):
     file_path = os.path.join(".", "dontcommitmebro", instance + ".toots.pickle")
     with open(file_path, "wb") as f:
         pickle.dump(toots, f)
-
-
-def setup(instance):
-    mastodon = init(instance)
-    data = mastodon.timeline_local(limit=25)
-    save(instance, data)
-
 
 def load(instance):
     """
@@ -64,6 +31,9 @@ def load(instance):
 
 
 def display_toots(instance):
+    """
+    keep for the formatting
+    """
     toots = load(instance)
     print("no of toots: {}\n\n".format(len(toots)))
     for toot in toots:
@@ -133,39 +103,51 @@ def cache_notifications(secrets):
         data = mastodon.notifications()
         save(instance, data)
 
-def new_code():
+def notifications():
     secrets = get_secrets()
 
     #cache_notifications(secrets)
 
     instances = list(secrets.keys())
-    instances = ['cybre.space'] # favs
+    #instances = ['cybre.space','i.write.codethat.sucks'] # favs
     
     for instance in instances:
-        print(instance)
+        print("//////////////////////////////////////////////////////////////////")
+        print("// {}".format(instance))
+        print("//////////////////////////////////////////////////////////////////\n")
         mastodon = get_mastodon(instance, secrets)
         data = load(instance)
-        pp.pprint(data)
+        for item in data:
+            note_type = item['type']
+            if note_type == 'favourite':
+                who = item['account']['acct']
 
-def old_code():
-    instance = "icosahedron.website"
-    # instance = "witches.town"
-    setup(instance)
+                soup = BeautifulSoup(item['status']['content'], "html.parser")
+                toot = soup.get_text()
 
-    #instance = "icosahedron.website"
-    print("toots for", instance)
-    display_toots(instance)
+                when = arrow.get(item['created_at']).humanize()
 
-    # print("//////////////////////////////////////////////////////////////////")
+                print("  {} faved your status {}\n    {}\n".format(who, when, toot))
+            elif note_type == 'follow':
+                who = item['account']['display_name']
+                handle = item['account']['acct']
+                when = arrow.get(item['created_at']).humanize()
 
+                print("  {} (@{}) followed you {}\n".format(who, handle, when))
+            elif note_type == 'mention':
+                who = item['account']['display_name']
+                handle = item['account']['acct']
+                when = arrow.get(item['created_at']).humanize()
 
-    # toots = load(instance)
-    # print("no of toots: {}\n\n".format(len(toots)))
+                soup = BeautifulSoup(item['status']['content'], "html.parser")
+                toot = soup.get_text()
 
-    # instance = "witches.town"
-    # print("toots for", instance)
-    # display_toots(instance)
+                print("  {} (@{}) {}\n    {}\n".format(who, handle, when, toot))
+            else:
+                print("unhandled type: ", item['type'], "\n")
+                pp.pprint(item)
+
 
 if __name__ == '__main__':
-    new_code()
+    notifications()
 
