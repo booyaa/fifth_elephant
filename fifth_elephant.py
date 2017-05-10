@@ -1,6 +1,7 @@
 import os
 import json
 import pickle
+import pprint as pp
 
 from mastodon import Mastodon
 from bs4 import BeautifulSoup
@@ -8,10 +9,10 @@ from bs4 import BeautifulSoup
 
 def init(instance):
     """
-    Creates a mastodon session, using cached credentials
+    creates a mastodon session, using cached credentials
 
-    Args: instance - to access
-    Returns: mastodon instance
+    args: instance - to access
+    returns: mastodon instance
     """
 
     home = os.environ['HOME']
@@ -23,7 +24,7 @@ def init(instance):
 
     secrets = json.loads(raw)
     if secrets is None:
-        print("Failed to parse config file!")
+        print("failed to parse config file!")
         os.sys.exit(-1)
 
     our_client_id = secrets[instance]["client_id"]
@@ -40,11 +41,9 @@ def save(instance, toots):
         instance - used to identify pickles
         toots - to be pickled
     """
-    file_path = os.path.join(".", "dontcommitmebro", instance + "toots.pickle")
+    file_path = os.path.join(".", "dontcommitmebro", instance + ".toots.pickle")
     with open(file_path, "wb") as f:
         pickle.dump(toots, f)
-
-    print("cached toots for", instance)
 
 
 def setup(instance):
@@ -59,7 +58,7 @@ def load(instance):
     Args: instance - to load
     Returns: toots
     """
-    file_path = os.path.join(".", "dontcommitmebro", instance + "toots.pickle")
+    file_path = os.path.join(".", "dontcommitmebro", instance + ".toots.pickle")
     with open(file_path, "rb") as f:
         return pickle.load(f)
 
@@ -88,13 +87,72 @@ def display_toots(instance):
         print("  {} - {}\n".format(toot_text,
                                    toot['url']))
 
+def get_secrets():
+    """
+    gets secrets
 
-if __name__ == '__main__':
+    returns: secret dict
+    """
+    home = os.environ['HOME']
+    file_path = os.path.join(home, ".config.fifth_elephant")
+
+    with open(file_path, 'r') as f:
+        raw = f.read()
+
+    secrets = json.loads(raw)
+
+    if secrets is None:
+        print("failed to parse config file!")
+        os.sys.exit(-1)
+
+    return secrets
+
+def get_mastodon(instance,secrets):
+    """
+    gets an mastodon instance
+
+    args: instance dict from get_secrets()
+    returns: Mastodon instance
+    """
+    api_base_url="https://"+instance
+
+    our_client_id = secrets[instance]["client_id"]
+    our_client_secret = secrets[instance]["client_secret"]
+    our_access_token = secrets[instance]["access_token"]
+    return Mastodon(api_base_url=api_base_url, client_id=our_client_id,
+                    client_secret=our_client_secret, access_token=our_access_token)
+
+
+def cache_notifications(secrets):
+    print("caching results")
+    instances = list(secrets.keys())
+    #instances = ["icosahedron.website"]
+    for instance in instances:
+        print(instance)
+        mastodon = get_mastodon(instance, secrets)
+        data = mastodon.notifications()
+        save(instance, data)
+
+def new_code():
+    secrets = get_secrets()
+
+    #cache_notifications(secrets)
+
+    instances = list(secrets.keys())
+    instances = ['cybre.space'] # favs
+    
+    for instance in instances:
+        print(instance)
+        mastodon = get_mastodon(instance, secrets)
+        data = load(instance)
+        pp.pprint(data)
+
+def old_code():
     instance = "icosahedron.website"
     # instance = "witches.town"
     setup(instance)
 
-    instance = "icosahedron.website"
+    #instance = "icosahedron.website"
     print("toots for", instance)
     display_toots(instance)
 
@@ -107,3 +165,7 @@ if __name__ == '__main__':
     # instance = "witches.town"
     # print("toots for", instance)
     # display_toots(instance)
+
+if __name__ == '__main__':
+    new_code()
+
